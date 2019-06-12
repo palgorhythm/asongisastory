@@ -12,7 +12,7 @@ h1 {
 }
 
 .word {
-  font-size: 1.5em;
+  font-size: 100%;
   font-weight: 600;
   display: inline;
   margin: 2px;
@@ -33,6 +33,7 @@ h1 {
   padding: 40px;
   border-radius: 10px;
   margin: 10px 10px;
+  display: flex;
 }
 
 .word-input {

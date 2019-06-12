@@ -1,11 +1,14 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const pg = require('pg');
+const pgp = require('pg-promise')();
 const bodyParser = require('body-parser');
 const pgURL =
   'postgres://bxbozhpf:n-ATadBj4n3bFbkGRVEX4Xa521JzJ2yS@raja.db.elephantsql.com:5432/bxbozhpf';
-const db = new pg.Client(pgURL);
+const db = pgp(pgURL);
+
+// ONLY IF I WANT TO WIPE THE TABLE
+db.none('DELETE FROM story');
 
 if (process.env.NODE_ENV === 'production') {
   // statically serve everything in the build folder on the route '/build'
@@ -17,30 +20,43 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.listen(3000); //listens on port 3000 -> http://localhost:3000/
 
 // routes here
 
 app.get('/api', (req, res) => {
-  connectAndQuery('SELECT storywords FROM story')
+  db.any('SELECT storywords FROM story')
     .then(value => {
-      console.log('scs!!!', value.rows);
-      return res.status(200).json(value.rows);
+      // console.log('server sending whole story!!!', value);
+      return res.status(200).json(value);
     })
     .catch(err => {
       console.log('error! ', err);
     });
 });
 
-function connectAndQuery(query) {
-  return new Promise((resolve, reject) => {
-    db.connect(function(err) {
-      if (err) return reject(err);
-      db.query(query, function(err, result) {
-        if (err) return reject(err);
-        db.end();
-        return resolve(result);
-      });
+app.post('/api', (req, res) => {
+  console.log('request', req.body.word);
+  db.none('INSERT INTO story(storywords) VALUES($1)', [req.body.word])
+    .then(() => {
+      return res.status(200).send('post success !');
+    })
+    .catch(err => {
+      console.log('error! ', err);
     });
-  });
-}
+});
+
+// function connectAndQuery(query, values) {
+//   return new Promise((resolve, reject) => {
+//     db.any(query, values);
+//     db.connect(function(err) {
+//       if (err) return reject(err);
+//       db.query(query, function(err, result) {
+//         if (err) return reject(err);
+//         db.end();
+//         return resolve(result);
+//       });
+//     });
+//   });
+// }
