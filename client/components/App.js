@@ -9,6 +9,7 @@ import sentiword from 'sentiword';
 let toneStarted = false;
 // TODO: make colors correspond to pitches
 // TODO: make right side be emojis
+// TODO: rhythms depend on length of word
 /// DONE sophisticated sentiment analysis
 /// TODO: socket.io for fast connection between server and client so no need for polling
 // multiple users multiple voices, can collab in real time, but choose who you want
@@ -61,7 +62,7 @@ class App extends Component {
       Tone.start();
       toneStarted = true;
       this.setSynth();
-      setInterval(this.fetchStoryFromDB, 1000);
+      // setInterval(this.fetchStoryFromDB, 1000);
     }
     if (word !== '') {
       const wordTrimmed = word.trim();
@@ -138,9 +139,11 @@ class App extends Component {
         this.curPitchIndex = Math.floor(
           scale(this.sequence.progress, 0, 1, 0, this.sequence.length)
         );
+        // this.curPitchIndex = (this.curPitchIndex + 1) % this.sequence.length;
         this.synth.triggerAttackRelease(pitch, '16n', time);
         // sayWord(this.state.fullStory[this.events.indexOf(pitch)]);
         // console.log(this.events.indexOf(pitch), pitch);
+        console.log('hi');
         this.setState({ curSequenceIndex: this.curPitchIndex });
       };
       cb = cb.bind(this);
@@ -152,6 +155,7 @@ class App extends Component {
       Tone.Transport.start(); // need to start !!!
       this.sequence.start(0);
     } else {
+      // this.curPitchIndex = 0;
       this.sequence.loopEnd += numNotesToAdd * (60 / Tone.Transport.bpm.value);
       this.events.forEach((note, i) => {
         // this.sequence.remove(i, note);
