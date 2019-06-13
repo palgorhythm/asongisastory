@@ -1,10 +1,12 @@
 import React from 'react';
 
+const colors = ['#e1a7f8', '#fdefe3', '#f5e663', '#bccdff'];
+
 function SingleWord(props) {
   let color = 'black';
   // console.log(props.curSequenceIndex);
   if (props.curSequenceIndex === props.wordId) {
-    color = '#fdefe3';
+    color = colors[Math.floor(colors.length * Math.random())];
   }
   const style = { color: color };
   return (

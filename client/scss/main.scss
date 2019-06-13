@@ -25,7 +25,7 @@ h1 {
   display: inline;
   margin: 2px;
   font-size: 1.5rem;
-  transition: 0.5s;
+  // transition: 0.5s;
 }
 
 .app {
@@ -40,10 +40,13 @@ h1 {
   display: flex;
   flex-direction: row;
   align-self: stretch;
+  // padding: 0px 20vw;
+  margin: 0 20vw;
 }
 
 .story-display {
-  background: $red;
+  // background: $seafoam;
+  min-width: 480px;
   color: black;
   padding: 20px;
   border-radius: 10px;
@@ -51,24 +54,28 @@ h1 {
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  align-items: flex-start;
+  // align-items: flex-start;
   border: 1px solid black;
   height: 400px;
+  box-shadow: 2px 4px 2px 2px #b9b9b9;
 }
 
-.single-user-entries {
-  background: $seafoam;
-  padding: 20px;
-  border-radius: 10px;
-  margin: 10px;
-  flex: 1;
-  border: 1px solid black;
-  display: flex;
-  flex-wrap: wrap;
-  height: 400px;
-  font-size: 1.5rem;
-  font-weight: 300;
-}
+// .single-user-entries {
+//   background: $red;
+//   padding: 20px;
+//   border-radius: 10px;
+//   margin: 10px;
+//   flex: 1;
+//   border: 1px solid black;
+//   display: flex;
+//   flex-wrap: wrap;
+//   height: 400px;
+//   font-size: 1.5rem;
+//   font-weight: 300;
+//   box-shadow: 2px 4px 2px 2px #b9b9b9;
+//   display: none;
+
+// }
 
 .word-input {
   background: $yellow;
@@ -135,19 +142,32 @@ input[type='submit']:focus {
   text-shadow: 1px 1px 5px #c3c3c3, 1px 1px 5px #c3c3c3;
 }
 
-.top-title {
-  position: absolute;
-  left: 50%;
-  -webkit-transform: translateX(-49.5%);
-  transform: translateX(-49.2%);
-  top: 18px;
-  text-shadow: 0 0 2px #c3c3c3, 0 0 2px #c3c3c3;
-}
-
 .is-a-text {
   color: $blue;
 }
+@media (min-width: 935px) {
+  .bottom-title > * {
+    color: rgba(27, 27, 27, 0.7);
+  }
+  .top-title {
+    position: absolute;
+    left: 50%;
+    -webkit-transform: translateX(-49.5%);
+    transform: translateX(-49.2%);
+    top: 18px;
+    text-shadow: 0 0 2px #c3c3c3, 0 0 2px #c3c3c3;
+  }
+}
 
-.bottom-title > * {
-  color: rgba(27, 27, 27, 0.7);
+@media (max-width: 935px) {
+  .top-title {
+    position: relative;
+    left: 0;
+    transform: 0;
+    text-shadow: 1px 1px 5px #c3c3c3, 1px 1px 5px #c3c3c3;
+  }
+  .bottom-title {
+    display: none;
+    position: absolute;
+  }
 }

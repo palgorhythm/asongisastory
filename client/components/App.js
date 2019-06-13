@@ -7,12 +7,16 @@ import notes from '../notes';
 import sentiword from 'sentiword';
 
 let toneStarted = false;
-/// TODO:  sophisticated sentiment analysis
+// TODO: make colors correspond to pitches
+// TODO: make right side be emojis
+/// DONE sophisticated sentiment analysis
 /// TODO: socket.io for fast connection between server and client so no need for polling
 // multiple users multiple voices, can collab in real time, but choose who you want
 // to collab with.
 // TODO: play a drum beat over it
 // TODO: record and export mp3
+//TODO: be able to change tempo, scales, etc.
+//
 function getInitialState() {
   return {
     fullStory: [],
@@ -30,12 +34,17 @@ class App extends Component {
     this.fetchStoryFromDB = this.fetchStoryFromDB.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.submitWord = this.submitWord.bind(this);
-    this.addStoryToDB = this.addStoryToDB.bind(this);
+    this.addWordToDB = this.addWordToDB.bind(this);
     this.addWordToSingleUserEntries = this.addWordToSingleUserEntries.bind(
       this
     );
   }
 
+  componentDidMount() {
+    const colorChoices = ['#60d394', '#f698a9'];
+    document.querySelector('.story-display').style.background =
+      colorChoices[Math.floor(2 * Math.random())];
+  }
   handleChange(event) {
     if (event === 0) {
       // for resetting when we submit using spacebar
@@ -52,12 +61,11 @@ class App extends Component {
       Tone.start();
       toneStarted = true;
       this.setSynth();
-      this.fetchStoryFromDB();
       setInterval(this.fetchStoryFromDB, 1000);
     }
     if (word !== '') {
       const wordTrimmed = word.trim();
-      this.addStoryToDB(wordTrimmed);
+      this.addWordToDB(wordTrimmed);
       this.addWordToSingleUserEntries(wordTrimmed);
     }
   }
@@ -69,9 +77,14 @@ class App extends Component {
     });
   }
 
-  addStoryToDB(word) {
+  addWordToDB(word) {
     // make a POST request to the server that creates an entry in the DB
     // console.log('adding word: ', word);
+    const newFullStory = this.state.fullStory.concat([word]);
+    this.setState({
+      fullStory: newFullStory
+    });
+    this.setSequence(newFullStory);
     fetch('/api', {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
@@ -96,22 +109,17 @@ class App extends Component {
     // return notes[sentiment.analyze(word).score + 5];
     const isAlpha = /^[a-z|A-Z]+$/g.test(word);
     let pitch = 'C6';
-    // console.log('is it alpha?', word, word.length, isAlpha);
     if (isAlpha) {
       const sentValue = sentiword(word).sentiment;
       const mappedSentVal = Math.floor(scale(sentValue, -1, 1, 0, 13));
-      // console.log('mapped sentiment val', mappedSentVal);
-      // pitch = notes.lengthOfWord[word.length % notes.lengthOfWord.length];
-      console.log(mappedSentVal, notes.majorScale);
       if (sentValue === 0) {
-        pitch = notes.majorScaleLow[Math.floor(11 * Math.random())];
+        pitch = notes.majorScaleLow[word.length % notes.majorScaleLow.length];
       } else if (sentValue < 0) {
         pitch =
           notes.minorScaleHigh[notes.minorScaleHigh.length - 1 - mappedSentVal];
       } else if (sentValue > 0) {
         pitch = notes.majorScaleHigh[mappedSentVal];
       }
-      // console.log(word, mappedSentVal, pitch);
     }
     return pitch;
   }
@@ -125,35 +133,37 @@ class App extends Component {
     const numNotesToAdd = this.prevEvents
       ? this.events.length - this.prevEvents.length
       : this.events.length;
-    this.prevEvents = this.events;
     if (!this.sequence) {
       let cb = (time, pitch) => {
-        const curPitchIndex = this.events.indexOf(pitch);
-        // document.getElementById(`word-${curPitchIndex}`).style.color =
-        //   '#99b3ff';
-        // let prevIndex;
-        // if (curPitchIndex === 0) {
-        //   prevIndex = this.events.length - 1;
-        // } else {
-        //   prevIndex = curPitchIndex - 1;
-        // }
-        // document.getElementById(`word-${prevIndex}`).style.color = 'black';
-        this.setState({ curSequenceIndex: curPitchIndex });
+        this.curPitchIndex = Math.floor(
+          scale(this.sequence.progress, 0, 1, 0, this.sequence.length)
+        );
         this.synth.triggerAttackRelease(pitch, '16n', time);
-        // sayWord(storyArr[events.indexOf(pitch)]);
+        // sayWord(this.state.fullStory[this.events.indexOf(pitch)]);
+        // console.log(this.events.indexOf(pitch), pitch);
+        this.setState({ curSequenceIndex: this.curPitchIndex });
       };
       cb = cb.bind(this);
-      this.sequence = new Tone.Sequence(cb, this.events, '8n');
-      this.sequence.start(0);
+      this.curPitchIndex = 0;
+      this.sequence = new Tone.Sequence(cb, this.events, '4n');
       this.sequence.loop = Infinity;
+      Tone.Transport.bpm.value = 60;
+      // TODO: fix the bpm thing
       Tone.Transport.start(); // need to start !!!
+      this.sequence.start(0);
     } else {
+      this.sequence.loopEnd += numNotesToAdd * (60 / Tone.Transport.bpm.value);
       this.events.forEach((note, i) => {
-        this.sequence.add(i, note);
+        // this.sequence.remove(i, note);
+        if (i <= this.prevEvents.length - 1) {
+          this.sequence.at(i, note);
+        } else {
+          this.sequence.add(i, note);
+        }
       });
-      this.sequence.loopEnd += numNotesToAdd * 0.25;
     }
-    console.log('new sequence! ', this.events);
+    // console.log(this.sequence);
+    this.prevEvents = this.events;
   }
 
   setSynth() {
@@ -192,7 +202,6 @@ class App extends Component {
             curSequenceIndex={this.state.curSequenceIndex}
             fullStory={this.state.fullStory}
           />
-          <SingleUserEntries singleUserEntries={this.state.singleUserEntries} />
         </div>
         <WordInput
           submitWord={this.submitWord}
@@ -203,6 +212,8 @@ class App extends Component {
     );
   }
 }
+
+// <SingleUserEntries singleUserEntries={this.state.singleUserEntries} />
 
 // class Synth(){
 //   constructor()
