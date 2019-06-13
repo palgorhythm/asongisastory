@@ -1,6 +1,7 @@
 import React from 'react';
 
-const colors = ['#e1a7f8', '#fdefe3', '#f5e663', '#bccdff'];
+// const colors = ['#e1a7f8', '#fdefe3', '#f5e663', '#bccdff'];
+const colors = ['#FFFFFF'];
 
 function SingleWord(props) {
   let color = 'black';

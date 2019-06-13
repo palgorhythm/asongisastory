@@ -23,7 +23,8 @@ function getInitialState() {
     fullStory: [],
     singleUserEntries: [],
     currentEntry: '',
-    curSequenceIndex: 0
+    curSequenceIndex: 0,
+    roboVoiceMode: false
   };
 }
 
@@ -39,6 +40,7 @@ class App extends Component {
     this.addWordToSingleUserEntries = this.addWordToSingleUserEntries.bind(
       this
     );
+    this.roboVoiceToggle = this.roboVoiceToggle.bind(this);
   }
 
   componentDidMount() {
@@ -69,6 +71,10 @@ class App extends Component {
       this.addWordToDB(wordTrimmed);
       this.addWordToSingleUserEntries(wordTrimmed);
     }
+  }
+
+  roboVoiceToggle() {
+    this.setState({ roboVoiceMode: !this.state.roboVoiceMode });
   }
 
   addWordToSingleUserEntries(word) {
@@ -136,21 +142,24 @@ class App extends Component {
       : this.events.length;
     if (!this.sequence) {
       let cb = (time, pitch) => {
-        this.curPitchIndex = Math.floor(
-          scale(this.sequence.progress, 0, 1, 0, this.sequence.length)
+        this.curPitchIndex = (this.curPitchIndex + 1) % this.sequence.length;
+        this.synth.triggerAttackRelease(
+          this.events[this.curPitchIndex],
+          '16n',
+          time
         );
-        // this.curPitchIndex = (this.curPitchIndex + 1) % this.sequence.length;
-        this.synth.triggerAttackRelease(pitch, '16n', time);
-        // sayWord(this.state.fullStory[this.events.indexOf(pitch)]);
+        if (this.state.roboVoiceMode) {
+          sayWord(this.state.fullStory[this.curPitchIndex]);
+        }
         // console.log(this.events.indexOf(pitch), pitch);
-        console.log('hi');
+        // console.log(pitch, this.curPitchIndex);
         this.setState({ curSequenceIndex: this.curPitchIndex });
       };
       cb = cb.bind(this);
       this.curPitchIndex = 0;
       this.sequence = new Tone.Sequence(cb, this.events, '4n');
       this.sequence.loop = Infinity;
-      Tone.Transport.bpm.value = 60;
+      Tone.Transport.bpm.value = 40;
       // TODO: fix the bpm thing
       Tone.Transport.start(); // need to start !!!
       this.sequence.start(0);
@@ -208,6 +217,7 @@ class App extends Component {
           />
         </div>
         <WordInput
+          roboVoiceToggle={this.roboVoiceToggle}
           submitWord={this.submitWord}
           currentEntry={this.state.currentEntry}
           handleChange={this.handleChange}
@@ -225,11 +235,33 @@ class App extends Component {
 
 export default App;
 
-function sayWord(word) {
-  const utterance = new SpeechSynthesisUtterance(word);
-  window.speechSynthesis.speak(utterance);
-}
-
 function scale(num, in_min, in_max, out_min, out_max) {
   return ((num - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+}
+
+let voiceList;
+let s = setSpeech();
+let utterance;
+s.then(voices => {
+  // utterance.voice = voices[Math.floor(voiceList.length * Math.random())];
+  utterance = new SpeechSynthesisUtterance();
+  utterance.voice = voices[0];
+});
+
+function sayWord(word) {
+  utterance.text = word;
+  window.speechSynthesis.speak(utterance);
+}
+function setSpeech() {
+  return new Promise(function(resolve, reject) {
+    let synth = window.speechSynthesis;
+    let id;
+
+    id = setInterval(() => {
+      if (synth.getVoices().length !== 0) {
+        resolve(synth.getVoices());
+        clearInterval(id);
+      }
+    }, 10);
+  });
 }

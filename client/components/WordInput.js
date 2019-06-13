@@ -25,6 +25,7 @@ function WordInput(props) {
         }}
       />
       <input type="submit" name="submitWord" value="enter a word" />
+      <button onClick={props.roboVoiceToggle}>robo voice mode toggle</button>
     </form>
   );
 }
