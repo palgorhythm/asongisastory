@@ -20,6 +20,7 @@
     "acorn": "^6.1.1",
     "body-parser": "^1.19.0",
     "express": "^4.12.3",
+    "music-scale": "^1.2.0",
     "node-sass": "^4.12.0",
     "normalize.css": "^8.0.1",
     "pg": "^7.11.0",
@@ -28,7 +29,7 @@
     "react": "^16.2.0",
     "react-dom": "^16.3.1",
     "sass-loader": "^7.1.0",
-    "sentiment": "^5.0.1",
+    "sentiword": "0.0.1",
     "tone": "^13.4.9",
     "webpack": "^4.29.3"
   },

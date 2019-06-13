@@ -6,17 +6,25 @@ function WordInput(props) {
       className="word-input"
       onSubmit={event => {
         event.preventDefault();
+        props.handleChange(0);
         props.submitWord(props.currentEntry);
       }}>
       <input
         type="text"
         name="enterWord"
+        autoComplete="off"
         value={props.currentEntry}
         onChange={e => {
           props.handleChange(e);
         }}
+        onKeyPress={e => {
+          if (e.charCode === 32 && props.currentEntry !== '') {
+            props.handleChange(0);
+            props.submitWord(props.currentEntry);
+          }
+        }}
       />
-      <input type="submit" name="submitWord" value="submit word" />
+      <input type="submit" name="submitWord" value="enter a word" />
     </form>
   );
 }

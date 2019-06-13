@@ -3,19 +3,22 @@ import StoryDisplay from './StoryDisplay';
 import WordInput from './WordInput';
 import SingleUserEntries from './SingleUserEntries';
 import * as Tone from 'tone';
-import Sentiment from 'sentiment';
-import { WSAEPROVIDERFAILEDINIT } from 'constants';
-const sentiment = new Sentiment();
+import notes from '../notes';
+import sentiword from 'sentiword';
 
 let toneStarted = false;
-
-// import other components here
+/// TODO:  sophisticated sentiment analysis
+/// TODO: socket.io for fast connection between server and client so no need for polling
+// multiple users multiple voices, can collab in real time, but choose who you want
+// to collab with.
+// TODO: play a drum beat over it
+// TODO: record and export mp3
 function getInitialState() {
   return {
     fullStory: [],
     singleUserEntries: [],
     currentEntry: '',
-    curPlayhead: 0
+    curSequenceIndex: 0
   };
 }
 
@@ -34,7 +37,12 @@ class App extends Component {
   }
 
   handleChange(event) {
-    this.setState({ currentEntry: event.target.value });
+    if (event === 0) {
+      // for resetting when we submit using spacebar
+      this.setState({ currentEntry: '' });
+    } else {
+      this.setState({ currentEntry: event.target.value });
+    }
   }
 
   submitWord(word) {
@@ -44,12 +52,13 @@ class App extends Component {
       Tone.start();
       toneStarted = true;
       this.setSynth();
+      this.fetchStoryFromDB();
       setInterval(this.fetchStoryFromDB, 1000);
-      // this.fetchStoryFromDB();
     }
     if (word !== '') {
-      this.addStoryToDB(word);
-      this.addWordToSingleUserEntries(word);
+      const wordTrimmed = word.trim();
+      this.addStoryToDB(wordTrimmed);
+      this.addWordToSingleUserEntries(wordTrimmed);
     }
   }
 
@@ -62,7 +71,7 @@ class App extends Component {
 
   addStoryToDB(word) {
     // make a POST request to the server that creates an entry in the DB
-    console.log('adding word: ', word);
+    // console.log('adding word: ', word);
     fetch('/api', {
       method: 'post',
       headers: { 'Content-Type': 'application/json' },
@@ -75,71 +84,76 @@ class App extends Component {
     fetch('/api')
       .then(response => response.json())
       .then(story => {
-        // console.log('client received response!', story);
         const currentStory = story.map(word => word.storywords);
-        this.setState({ fullStory: currentStory });
-        // console.log('GET whole story fromDB', this.state.fullStory);
-        this.setSequence(this.state.fullStory);
+        if (this.state.fullStory.length !== currentStory.length) {
+          this.setState({ fullStory: currentStory });
+          this.setSequence(this.state.fullStory);
+        }
       });
   }
 
   sentimentAnalysis(word) {
-    // const notes = [
-    //   'C#3',
-    //   'D#3',
-    //   'F#3',
-    //   'G#3',
-    //   'A#3',
-    //   'C4',
-    //   'D4',
-    //   'E4',
-    //   'G4',
-    //   'A4',
-    //   'B4'
-    // ];
-    const notes = [
-      'C4',
-      'D4',
-      'E4',
-      'G4',
-      'A4',
-      'B4',
-      'C#3',
-      'D#3',
-      'F#3',
-      'G#3',
-      'A#3'
-    ];
     // return notes[sentiment.analyze(word).score + 5];
-    return notes[word.length % notes.length];
+    const isAlpha = /^[a-z|A-Z]+$/g.test(word);
+    let pitch = 'C6';
+    // console.log('is it alpha?', word, word.length, isAlpha);
+    if (isAlpha) {
+      const sentValue = sentiword(word).sentiment;
+      const mappedSentVal = Math.floor(scale(sentValue, -1, 1, 0, 13));
+      // console.log('mapped sentiment val', mappedSentVal);
+      // pitch = notes.lengthOfWord[word.length % notes.lengthOfWord.length];
+      console.log(mappedSentVal, notes.majorScale);
+      if (sentValue === 0) {
+        pitch = notes.majorScaleLow[Math.floor(11 * Math.random())];
+      } else if (sentValue < 0) {
+        pitch =
+          notes.minorScaleHigh[notes.minorScaleHigh.length - 1 - mappedSentVal];
+      } else if (sentValue > 0) {
+        pitch = notes.majorScaleHigh[mappedSentVal];
+      }
+      // console.log(word, mappedSentVal, pitch);
+    }
+    return pitch;
+  }
+
+  scheduleNext(time) {
+    Tone.Transport.schedule(scheduleNext, '+' + random(1, 3));
   }
 
   setSequence(storyArr) {
-    // Van Halen - Jump MIDI from http://www.midiworld.com/files/1121/
-    // converted using
-    const events = storyArr.map(word => this.sentimentAnalysis(word));
+    this.events = storyArr.map(word => this.sentimentAnalysis(word));
+    const numNotesToAdd = this.prevEvents
+      ? this.events.length - this.prevEvents.length
+      : this.events.length;
+    this.prevEvents = this.events;
     if (!this.sequence) {
-      const wSynth = window.speechSynthesis;
       let cb = (time, pitch) => {
+        const curPitchIndex = this.events.indexOf(pitch);
+        // document.getElementById(`word-${curPitchIndex}`).style.color =
+        //   '#99b3ff';
+        // let prevIndex;
+        // if (curPitchIndex === 0) {
+        //   prevIndex = this.events.length - 1;
+        // } else {
+        //   prevIndex = curPitchIndex - 1;
+        // }
+        // document.getElementById(`word-${prevIndex}`).style.color = 'black';
+        this.setState({ curSequenceIndex: curPitchIndex });
         this.synth.triggerAttackRelease(pitch, '16n', time);
-        // console.log(this.part.progress < 0.001);
-        const ya = new SpeechSynthesisUtterance(pitch);
-        wSynth.speak(ya);
+        // sayWord(storyArr[events.indexOf(pitch)]);
       };
       cb = cb.bind(this);
-      this.sequence = new Tone.Sequence(cb, events, '8n');
+      this.sequence = new Tone.Sequence(cb, this.events, '8n');
       this.sequence.start(0);
       this.sequence.loop = Infinity;
       Tone.Transport.start(); // need to start !!!
     } else {
-      // this.sequence.stop();
-      console.log(events);
-      events.forEach((note, i) => {
+      this.events.forEach((note, i) => {
         this.sequence.add(i, note);
-        // console.log(this.sequence.at(i));
       });
-      // this.sequence.start(0);
+      this.sequence.loopEnd += numNotesToAdd * 0.25;
     }
+    console.log('new sequence! ', this.events);
   }
 
   setSynth() {
@@ -159,14 +173,32 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <h1>{'a story is a song'}</h1>
-        <StoryDisplay fullStory={this.state.fullStory} />
+        <h1>
+          <span className="bottom-title">
+            <span className="is-a-text">{'a '}</span>
+            <span className="story-text">{'story '}</span>
+            <span className="is-a-text">{'is a '}</span>
+            <span className="song-text">{'song'}</span>
+          </span>
+          <span className="top-title">
+            <span className="is-a-text">{'a '}</span>
+            <span className="story-text">{'story '}</span>
+            <span className="is-a-text">{'is a '}</span>
+            <span className="song-text">{'song'}</span>
+          </span>
+        </h1>
+        <div className="displays">
+          <StoryDisplay
+            curSequenceIndex={this.state.curSequenceIndex}
+            fullStory={this.state.fullStory}
+          />
+          <SingleUserEntries singleUserEntries={this.state.singleUserEntries} />
+        </div>
         <WordInput
           submitWord={this.submitWord}
           currentEntry={this.state.currentEntry}
           handleChange={this.handleChange}
         />
-        <SingleUserEntries singleUserEntries={this.state.singleUserEntries} />
       </div>
     );
   }
@@ -177,3 +209,12 @@ class App extends Component {
 // }
 
 export default App;
+
+function sayWord(word) {
+  const utterance = new SpeechSynthesisUtterance(word);
+  window.speechSynthesis.speak(utterance);
+}
+
+function scale(num, in_min, in_max, out_min, out_max) {
+  return ((num - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
+}

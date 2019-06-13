@@ -37,7 +37,7 @@ app.get('/api', (req, res) => {
 });
 
 app.post('/api', (req, res) => {
-  console.log('request', req.body.word);
+  // console.log('request', req.body.word);
   db.none('INSERT INTO story(storywords) VALUES($1)', [req.body.word])
     .then(() => {
       return res.status(200).send('post success !');
@@ -46,17 +46,3 @@ app.post('/api', (req, res) => {
       console.log('error! ', err);
     });
 });
-
-// function connectAndQuery(query, values) {
-//   return new Promise((resolve, reject) => {
-//     db.any(query, values);
-//     db.connect(function(err) {
-//       if (err) return reject(err);
-//       db.query(query, function(err, result) {
-//         if (err) return reject(err);
-//         db.end();
-//         return resolve(result);
-//       });
-//     });
-//   });
-// }
