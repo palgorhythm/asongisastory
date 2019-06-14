@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import StoryDisplay from './StoryDisplay';
 import WordInput from './WordInput';
-import SingleUserEntries from './SingleUserEntries';
+// import SingleUserEntries from './SingleUserEntries';
 import * as Tone from 'tone';
 import notes from '../notes';
 import sentiword from 'sentiword';
@@ -159,7 +159,7 @@ class App extends Component {
       this.curPitchIndex = 0;
       this.sequence = new Tone.Sequence(cb, this.events, '4n');
       this.sequence.loop = Infinity;
-      Tone.Transport.bpm.value = 40;
+      Tone.Transport.bpm.value = 100;
       // TODO: fix the bpm thing
       Tone.Transport.start(); // need to start !!!
       this.sequence.start(0);
