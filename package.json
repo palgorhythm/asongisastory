@@ -28,24 +28,24 @@
     "prop-types": "^15.6.1",
     "react": "^16.2.0",
     "react-dom": "^16.3.1",
-    "sass-loader": "^7.1.0",
+    "sass-loader": "^13.2.0",
     "sentiword": "0.0.1",
     "tone": "^13.4.9",
-    "webpack": "^4.29.3"
+    "webpack": "^5.75.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",
     "@babel/preset-env": "^7.4.5",
     "@babel/preset-react": "^7.0.0",
-    "babel-loader": "^8.0.6",
+    "babel-loader": "^8.3.0",
     "concurrently": "^4.1.0",
     "cross-env": "^5.2.0",
-    "css-loader": "^2.1.1",
+    "css-loader": "^6.7.3",
     "isomorphic-fetch": "^2.2.1",
-    "mini-css-extract-plugin": "^0.7.0",
+    "mini-css-extract-plugin": "^2.7.2",
     "nodemon": "^1.18.9",
-    "style-loader": "^0.23.1",
-    "webpack-cli": "^3.2.3",
+    "style-loader": "^3.3.1",
+    "webpack-cli": "^5.0.1",
     "webpack-dev-server": "^3.7.1"
   }
 }
